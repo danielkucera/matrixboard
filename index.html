@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+}
+
+#matrix {
+	background-color: #007700;
+	width: max-content;
+	position: relative;
+	padding: 30px;
+	margin: 20px;
+}
+
+#controls {
+	margin: 20px;
+}
+
+.hole {
+//	position: absolute;
+	height: 30px;
+	width: 30px;
+	vertical-align: middle;
+//	z-index: 1;
+//	src: 'img/hole.png';
+//	background: url('img/hole.png') no-repeat;
+}
+
+.hb {
+//	position: absolute;
+	height: 10px;
+	width: 20px;
+	vertical-align: middle;
+	z-index: 2;
+	padding-bottom: 5px;
+	padding-top: 5px;
+//	margin-bottom: 5px;
+	margin-left: -5px;
+	margin-right: -5px;
+	opacity: 0;
+}
+
+.vb {
+//	position: absolute;
+	height: 20px;
+	width: 10px;
+	vertical-align: middle;
+	z-index: 3;
+	margin-left: 5px;
+	margin-right: 15px;
+	padding-left: 5px;
+	padding-right: 5px;
+//	margin-top: -5px;
+//	margin-bottom: -5px;
+	opacity: 0;
+}
+
+.row {
+	width: max-content;
+}
+
+.brow {
+	width: max-content;
+//	margin-top: -5px;
+//	margin-bottom: -5px;
+}
+
+#width, #height {
+	width: 30px;
+}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>
+var objs = new Array();
+
+function toggle2(){
+	alert('toggle');
+	o = $( this ).css('visibility') == 'hidden';
+	n = (o ? 'visible' : 'hidden');
+	$( this ).css('visibility', n);
+}
+function toggle() {
+	id = $( this ).attr('id');
+	o = 1 - $( this ).css('opacity');
+	if (o) {
+		objs.push(id);
+	} else {
+		objs.pop(id);
+	}
+	$( this ).css('opacity', o);
+}
+
+function load() {
+	if (!window.File || !window.FileReader || !window.FileList || !window.Blob) {
+	  alert('The File APIs are not fully supported in this browser.');
+	  return;
+	}   
+	
+	input = document.getElementById('load');
+	if (!input) {
+	  alert("Um, couldn't find the fileinput element.");
+	}
+	else if (!input.files) {
+	  alert("This browser doesn't seem to support the `files` property of file inputs.");
+	}
+	else if (!input.files[0]) {
+	  alert("Please select a file before clicking 'Load'");               
+	}
+	else {
+	  file = input.files[0];
+	  fr = new FileReader();
+	  fr.onload = function() {
+		objs = JSON.parse(fr.result);
+		loadData(objs);
+	  }
+	  fr.readAsText(file);
+	}
+}
+
+function loadData(newobjs) {
+	create();
+	objs = newobjs;
+	for (var obj in objs) {
+		id = '#'+objs[obj];
+		$( id ).css({ 'opacity': 1 });
+	}
+}
+
+function saveAs(uri, filename) {
+  var link = document.createElement('a');
+  if (typeof link.download === 'string') {
+    link.href = uri;
+    link.download = filename;
+
+    //Firefox requires the link to be in the body
+    document.body.appendChild(link);
+    
+    //simulate click
+    link.click();
+
+    //remove the link when done
+    document.body.removeChild(link);
+  } else {
+    window.open(uri);
+  }
+}
+
+function save() {
+	var uri = "data:application/json;base64,"+btoa(JSON.stringify(objs));
+	saveAs(uri, "matrix.json");
+}
+
+function resize() {
+	oldobjs = objs.slice();
+	loadData(oldobjs);
+}
+
+function create() {
+	objs = new Array();
+	w = $("#width").val();
+	h = $("#height").val();
+	createMatrix(w, h, 5);
+}
+
+function createMatrix(w, h, s) {
+	$("#matrix").empty();
+
+	for (y = 1; y <= h; y++) {
+		var img = $('<div />', { 
+		  class: 'row',
+		  id: 'row_'+y,
+		});
+		img.appendTo($('#matrix'));
+
+		var img = $('<div />', { 
+		  class: 'brow',
+		  id: 'brow_'+y,
+		});
+		img.appendTo($('#matrix'));
+
+		for (x = 1; x <= w; x++) {
+			// holes
+			var img = $('<img />', { 
+			  class: 'hole',
+			  id: 'hole_'+x+'_'+y,
+			  src: 'img/hole.png'
+			});
+//			img.css({ 'left': 8*s*x + 'px', 'top': 8*s*y + 'px' });
+			img.appendTo($('#row_'+y));
+
+			// horizontal bridges
+			var img = $('<img />', { 
+			  class: 'hb',
+			  id: 'hb_'+x+'_'+y,
+			  src: 'img/hbridge.png'
+			});
+/*
+			img.css({ 
+				'left': (8*x+6)*s + 'px', 
+				'top': (8*y+2)*s + 'px',
+				'opacity': 1
+			});
+			*/
+			img.click(toggle);
+			img.appendTo($('#row_'+y));
+
+			// vertical bridges
+			var img = $('<img />', { 
+			  class: 'vb',
+			  id: 'vb_'+x+'_'+y,
+			  src: 'img/hbridge.png'
+			});
+			/*
+			img.css({ 
+				'left': (8*x+2)*s + 'px', 
+				'top': (8*y+5)*s + 'px',
+				'opacity': 1
+			});
+			*/
+			img.click(toggle);
+			img.appendTo($('#brow_'+y));
+		}
+	}
+}
+
+$(document).ready(function(){
+
+	create();
+
+	$( '#load' ).change(load);
+
+});
+
+
+</script>
+</head>
+<body>
+	<div id="controls">
+		<input type="text" id="width" name="width" value="10" />
+		x
+		<input type="text" id="height" name="height" value="10" />
+		<button onClick="resize();">Resize</button>
+		<button onClick="create();">Create new</button>
+		<button onClick="save();">Save</button>
+		<input type="file" id="load" name="load">
+	</div>
+	<div id="matrix" />
+</body>
+</html>
