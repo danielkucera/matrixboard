@@ -7,9 +7,7 @@ body {
 
 #matrix {
 	background-color: #007700;
-	width: max-content;
 	position: relative;
-	padding: 30px;
 	margin: 20px;
 }
 
@@ -17,60 +15,12 @@ body {
 	margin: 20px;
 }
 
-.hole {
-//	position: absolute;
-	height: 30px;
-	width: 30px;
-	vertical-align: middle;
-//	z-index: 1;
-//	src: 'img/hole.png';
-//	background: url('img/hole.png') no-repeat;
-}
-
-.hb {
-//	position: absolute;
-	height: 10px;
-	width: 20px;
-	vertical-align: middle;
-	z-index: 2;
-	padding-bottom: 5px;
-	padding-top: 5px;
-//	margin-bottom: 5px;
-	margin-left: -5px;
-	margin-right: -5px;
-	opacity: 0;
-}
-
-.vb {
-//	position: absolute;
-	height: 20px;
-	width: 10px;
-	vertical-align: top;
-	z-index: 3;
-	margin-left: 5px;
-	margin-right: 15px;
-	padding-left: 5px;
-	padding-right: 5px;
-//	margin-top: -5px;
-//	margin-bottom: -5px;
-	opacity: 0;
-}
-
-.row {
-	width: max-content;
-}
-
-.brow {
-	width: max-content;
-	margin-top: -5px;
-	margin-bottom: -5px;
-}
-
 #width, #height {
 	width: 30px;
 }
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://d3js.org/d3.v5.min.js"></script>
 <script>
 var objs = new Array();
 
@@ -80,7 +30,7 @@ function toggle2(){
 	n = (o ? 'visible' : 'hidden');
 	$( this ).css('visibility', n);
 }
-function toggle() {
+function toggleBridge() {
 	id = $( this ).attr('id');
 	o = 1 - $( this ).css('opacity');
 	if (o) {
@@ -158,68 +108,52 @@ function resize() {
 
 function create() {
 	objs = new Array();
-	w = $("#width").val();
-	h = $("#height").val();
+	w = parseInt($("#width").val());
+	h = parseInt($("#height").val());
 	createMatrix(w, h, 5);
 }
 
 function createMatrix(w, h, s) {
-	$("#matrix").empty();
+	matrix = d3.select("#matrix");
+	matrix.html(null)
+		.style("width", ((w+1)*50) + 'px')
+		.style("height", ((h+1)*50) + 'px');
 
 	for (y = 1; y <= h; y++) {
-		var img = $('<div />', { 
-		  class: 'row',
-		  id: 'row_'+y,
-		});
-		img.appendTo($('#matrix'));
-
-		var img = $('<div />', { 
-		  class: 'brow',
-		  id: 'brow_'+y,
-		});
-		img.appendTo($('#matrix'));
-
 		for (x = 1; x <= w; x++) {
-			// holes
-			var img = $('<img />', { 
-			  class: 'hole',
-			  id: 'hole_'+x+'_'+y,
-			  src: 'img/hole.png'
-			});
-//			img.css({ 'left': 8*s*x + 'px', 'top': 8*s*y + 'px' });
-			img.appendTo($('#row_'+y));
-
 			// horizontal bridges
-			var img = $('<img />', { 
-			  class: 'hb',
-			  id: 'hb_'+x+'_'+y,
-			  src: 'img/hbridge.png'
-			});
-/*
-			img.css({ 
-				'left': (8*x+6)*s + 'px', 
-				'top': (8*y+2)*s + 'px',
-				'opacity': 1
-			});
-			*/
-			img.click(toggle);
-			img.appendTo($('#row_'+y));
+			hbridge = matrix.append("line")
+				.attr("id", 'hbridge_'+x+'_'+y)
+				.attr("x1", x*50+10)
+				.attr("y1", y*50)
+				.attr("x2", (x+1)*50-10)
+				.attr("y2", y*50)
+				.attr("stroke", 'white')
+				.attr("stroke-width", 15)
+				.style("opacity", 0);
+			hbridge.on("click", toggleBridge);
 
 			// vertical bridges
-			var img = $('<img />', { 
-			  class: 'vb',
-			  id: 'vb_'+x+'_'+y,
-			  src: 'img/hbridge.png'
-			});
-			/*
-			img.css({ 
-				'left': (8*x+2)*s + 'px', 
-				'top': (8*y+5)*s + 'px',
-				'opacity': 1
-			});
-			*/
-			img.click(toggle);
-			img.appendTo($('#brow_'+y));
+			vbridge = matrix.append("line")
+				.attr("id", 'vbridge_'+x+'_'+y)
+				.attr("x1", x*50)
+				.attr("y1", y*50+10)
+				.attr("x2", x*50)
+				.attr("y2", (y+1)*50-10)
+				.attr("stroke", 'white')
+				.attr("stroke-width", 15)
+				.style("opacity", 0);
+			vbridge.on("click", toggleBridge);
+
+			// holes
+			matrix.append("circle")
+				.attr("id", 'hole_'+x+'_'+y)
+				.attr("cx", x*50)
+				.attr("cy", y*50)
+				.attr("stroke", 'white')
+				.attr("stroke-width", 10)
+				.attr("fill", 'transparent')
+				.attr("r", 15);
 		}
 	}
 }
@@ -245,6 +179,7 @@ $(document).ready(function(){
 		<button onClick="save();">Save</button>
 		<input type="file" id="load" name="load">
 	</div>
-	<div id="matrix" />
+	<svg id="matrix">
+	</svg>
 </body>
 </html>
