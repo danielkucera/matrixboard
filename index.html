@@ -23,6 +23,8 @@ body {
 <script src="https://d3js.org/d3.v5.min.js"></script>
 <script>
 var objs = new Array();
+var components = new Array();
+var selected = 0;
 
 function toggle2(){
 	alert('toggle');
@@ -38,6 +40,83 @@ function toggleBridge() {
 	} else {
 		objs.pop(id);
 	}
+	$( this ).css('opacity', o);
+}
+
+function toggleComponent(){
+	id = $( this ).attr('id');
+	cmpt = d3.select('#'+id);
+	if (selected == id) {
+		//unselect me
+		d3.select('#'+selected).attr('stroke', 'black');
+		selected = "";
+		return;
+	} else {
+		if (selected.length){
+			//unselect other
+			d3.select('#'+selected).attr('stroke', 'black');
+			selected = "";
+		}
+		//select me
+		cmpt.attr('stroke', 'gray');
+		selected = id;
+	}
+}
+
+function createComponent(){
+	i = 0;
+	do {
+		name = "component_" + i++;
+	} while ( Object.keys(components).includes(name));
+	console.log("creating "+name);
+	components[name] = new Array();
+	matrix.append("polygon")
+		.attr('id', name)
+		.attr("stroke","gray")
+		.attr("fill", 'none')
+		.attr("stroke-width",5)
+		.on("click", toggleComponent);
+	return name;
+}
+
+function toggleLeg(){
+	id = $( this ).attr('id');
+	o = 1 - $( this ).css('opacity');
+
+	console.log(id + ' new opacity '+o);
+
+	if (!selected.length){
+		if (o == 0) {
+			alert('Cannot create new component on an occupied hole');
+			return;
+		}
+		selected = createComponent();
+	}
+
+
+	hole = d3.select('#'+id);
+	x = hole.attr("cx");
+	y = hole.attr("cy");
+	coord = x+','+y;
+
+	poly = components[selected]
+
+	if (poly.includes(coord)) {
+		// delete mark
+		for( var i = 0; i < poly.length; i++){ 
+			if ( poly[i] === coord) {
+				poly.splice(i, 1); 
+			}
+		}
+	} else {
+		if (o == 0) {
+			alert('Cannot add an occupied hole');
+			return;
+		}
+		poly.push(coord);
+	}
+	polygon = d3.select('#'+selected);
+	polygon.attr('points', poly.join(" "))
 	$( this ).css('opacity', o);
 }
 
@@ -114,7 +193,6 @@ function create() {
 }
 
 function createMatrix(w, h, s) {
-	matrix = d3.select("#matrix");
 	matrix.html(null)
 		.style("width", ((w+1)*50) + 'px')
 		.style("height", ((h+1)*50) + 'px');
@@ -130,8 +208,8 @@ function createMatrix(w, h, s) {
 				.attr("y2", y*50)
 				.attr("stroke", 'white')
 				.attr("stroke-width", 15)
-				.style("opacity", 0);
-			hbridge.on("click", toggleBridge);
+				.style("opacity", 0)
+				.on("click", toggleBridge);
 
 			// vertical bridges
 			vbridge = matrix.append("line")
@@ -142,8 +220,8 @@ function createMatrix(w, h, s) {
 				.attr("y2", (y+1)*50-10)
 				.attr("stroke", 'white')
 				.attr("stroke-width", 15)
-				.style("opacity", 0);
-			vbridge.on("click", toggleBridge);
+				.style("opacity", 0)
+				.on("click", toggleBridge);
 
 			// holes
 			matrix.append("circle")
@@ -154,11 +232,23 @@ function createMatrix(w, h, s) {
 				.attr("stroke-width", 10)
 				.attr("fill", 'transparent')
 				.attr("r", 15);
+
+			// leg
+			matrix.append("circle")
+				.attr("id", 'leg_'+x+'_'+y)
+				.attr("cx", x*50)
+				.attr("cy", y*50)
+				.attr("fill", 'black')
+				.attr("r", 9)
+				.style("opacity", 0)
+				.on("click", toggleLeg);
+
 		}
 	}
 }
 
 $(document).ready(function(){
+	matrix = d3.select("#matrix");
 
 	create();
 
@@ -177,6 +267,7 @@ $(document).ready(function(){
 		<button onClick="resize();">Resize</button>
 		<button onClick="create();">Create new</button>
 		<button onClick="save();">Save</button>
+		<button onClick="createComponent();">Component</button>
 		<input type="file" id="load" name="load">
 	</div>
 	<svg id="matrix">
